@@ -1,6 +1,5 @@
 package snet.internal.eval;
 
-import sys.thread.Semaphore;
 #if (eval && sys)
 import sys.net.Host;
 import sys.thread.Lock;

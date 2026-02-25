@@ -7,6 +7,11 @@ using StringTools;
 @:forward()
 abstract Response(ResponseData) from ResponseData {
 	@:from
+	public static function fromString(value:String):Response {
+		return Bytes.ofString(value);
+	}
+
+	@:from
 	public static function fromBytes(raw:Bytes):Response {
 		var str = raw.toString();
 		var headerEnd = str.indexOf("\r\n\r\n");
@@ -116,6 +121,11 @@ abstract Response(ResponseData) from ResponseData {
 				lines.shift(); // remove \r\n
 		}
 		return result.toString();
+	}
+
+	@:to
+	public function toString():String {
+		return toBytes().toString();
 	}
 
 	@:to

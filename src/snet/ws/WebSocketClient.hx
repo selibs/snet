@@ -1,9 +1,7 @@
 package snet.ws;
 
 import haxe.io.Bytes;
-import snet.Net;
 #if (nodejs || sys)
-import haxe.Json;
 import haxe.crypto.Base64;
 import snet.http.Http;
 import snet.internal.Client;
@@ -159,7 +157,7 @@ class WebSocketClient {
 			}
 			socket.onopen = () -> {
 				isClosed = false;
-				socket.onmessage = m -> text(m.data); // [object Blob]
+				socket.onmessage = m -> text(m.data);
 				socket.onclose = () -> {
 					isClosed = true;
 					closed();

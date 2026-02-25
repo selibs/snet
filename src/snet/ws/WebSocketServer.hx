@@ -1,7 +1,6 @@
 package snet.ws;
 
 #if (nodejs || sys)
-import haxe.io.Bytes;
 import snet.Net;
 import snet.http.Http;
 import snet.ws.WebSocket;

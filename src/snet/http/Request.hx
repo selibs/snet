@@ -13,6 +13,11 @@ class MapExt {
 @:forward()
 abstract Request(RequestData) from RequestData {
 	@:from
+	public static function fromString(value:String):Request {
+		return Bytes.ofString(value);
+	}
+
+	@:from
 	public static function fromBytes(raw:Bytes):Request {
 		var str = raw.toString();
 		var lines = str.split("\r\n");
@@ -85,6 +90,11 @@ abstract Request(RequestData) from RequestData {
 				map.set(pair.substr(0, eq).urlDecode(), pair.substr(eq + 1).urlDecode());
 		}
 		return map;
+	}
+
+	@:to
+	public function toString():String {
+		return toBytes().toString();
 	}
 
 	@:to

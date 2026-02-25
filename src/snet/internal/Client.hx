@@ -3,8 +3,6 @@ package snet.internal;
 #if (nodejs || sys)
 import haxe.io.Bytes;
 import slog.Log;
-import sasync.Lazy;
-import sasync.Async;
 import snet.Net;
 import snet.internal.Socket;
 
@@ -61,36 +59,34 @@ class Client {
 	function closeClient() {}
 
 	public function connect() {
-		return Async.background(() -> if (isClosed) {
-			try {
-				socket = new Socket();
-				socket.connect(remote);
-				isClosed = false;
-				// socket.setBlocking(false);
-				local = socket.host.info;
-				logger.name = 'CLIENT $local - $remote';
-				connectClient();
-				logger.debug("Connected");
-				opened();
-				process();
-			} catch (e) {
-				logger.error('Failed to connect: $e');
-				if (!isClosed) {
-					socket.close();
-					isClosed = true;
-				}
-			}
-		});
-	}
+		if (!isClosed)
+			return;
 
-	public function close() {
-		return new Lazy((resolve, reject) -> {
+		try {
+			socket = new Socket();
+			socket.connect(remote);
+			isClosed = false;
+			// socket.setBlocking(false);
+			local = socket.host.info;
+			logger.name = 'CLIENT $local - $remote';
+			connectClient();
+			logger.debug("Connected");
+			opened();
+			process();
+		} catch (e) {
+			logger.error('Failed to connect: $e');
 			if (!isClosed) {
 				socket.close();
 				isClosed = true;
 			}
-			resolve();
-		}, false);
+		}
+	}
+
+	public function close() {
+		if (isClosed)
+			return;
+		socket.close();
+		isClosed = true;
 	}
 
 	public function send(data:Bytes) {
@@ -103,18 +99,18 @@ class Client {
 	}
 
 	function process() {
-		Async.background(() -> {
-			while (!isClosed)
-				if (!tick())
-					break;
-			closeClient();
-			if (!isClosed) {
-				socket.close();
-				isClosed = true;
-			}
-			logger.debug("Closed");
-			closed();
-		});
+		while (!isClosed) {
+			if (!tick())
+				break;
+			Sys.sleep(0.01);
+		}
+		closeClient();
+		if (!isClosed) {
+			socket.close();
+			isClosed = true;
+		}
+		logger.debug("Closed");
+		closed();
 	}
 
 	function tick():Bool {

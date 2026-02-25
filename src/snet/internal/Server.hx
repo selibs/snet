@@ -4,8 +4,6 @@ package snet.internal;
 import haxe.Exception;
 import haxe.Constraints;
 import haxe.io.Bytes;
-import sasync.Lazy;
-import sasync.Async;
 import snet.Net;
 import snet.internal.Socket;
 import snet.internal.Client;
@@ -39,21 +37,19 @@ class Server<T:Constructible<ClientConstructor> & Client> extends Client {
 	@async override function connect() {}
 
 	public function open() {
-		return Async.background(() -> if (isClosed) {
-			socket = new Socket();
-			try {
-				socket.bind(local);
-				socket.listen(limit);
-				isClosed = false;
-				logger.name = 'SERVER $local';
-				logger.debug("Opened");
-				opened();
-				process();
-			} catch (e) {
-				logger.error('Failed to open: $e');
-				socket.close();
-			}
-		});
+		socket = new Socket();
+		try {
+			socket.bind(local);
+			socket.listen(limit);
+			isClosed = false;
+			logger.name = 'SERVER $local';
+			logger.debug("Opened");
+			opened();
+			process();
+		} catch (e) {
+			logger.error('Failed to open: $e');
+			socket.close();
+		}
 	}
 
 	override function send(data:Bytes) {

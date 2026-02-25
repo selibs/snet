@@ -15,11 +15,11 @@
         "client",
         "network"
     ],
-    "version": "0.0.2",
+    "version": "0.0.3",
     "classPath": "src",
     "description": "Library for networking in Haxe",
     "contributors": ["smoothie"],
-    "releasenote": "First release",
+    "releasenote": "Remove async",
     "dependencies": {
         "ssignals": "",
         "sasync": "",

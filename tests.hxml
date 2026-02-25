@@ -1,6 +1,5 @@
 -D log
 -L slog
--L sasync
 -L ssignals
 -L snet
 -cp tests

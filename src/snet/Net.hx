@@ -12,13 +12,15 @@ abstract URI(URIData) from URIData to URIData {
 
 		var proto = reg.matched(1);
 		var isSecure = proto != null && (proto == "https" || proto == "wss");
-
 		var rawHost = reg.matched(4);
+        var host = rawHost != null ? HostInfo.fromString(rawHost) : null;
+        if (host.port == null)
+            host.port = isSecure ? 443 : 80;
 
 		return {
 			proto: proto,
 			isSecure: isSecure,
-			host: rawHost != null ? HostInfo.fromString(rawHost) : null,
+			host: host,
 			user: reg.matched(2),
 			pass: reg.matched(3),
 			path: reg.matched(5) ?? "/",

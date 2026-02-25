@@ -1,6 +1,5 @@
 package;
 
-import sasync.Async;
 import snet.http.Http;
 
 class Tests {
@@ -8,7 +7,7 @@ class Tests {
 		run();
 	}
 
-	@async static function run() {
-		trace(@await Http.request("http://localhost:50"));
+	static function run() {
+		trace(Http.request("http://example.com/"));
 	}
 }

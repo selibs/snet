@@ -5,7 +5,6 @@ import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
 import haxe.crypto.Sha1;
 import haxe.crypto.Base64;
-import snet.internal.Socket;
 
 using StringTools;
 
@@ -16,6 +15,13 @@ enum abstract OpCode(Int) from Int to Int {
 	var Close = 0x8;
 	var Ping = 0x9;
 	var Pong = 0xA;
+}
+
+enum abstract State(Int) from Int to Int {
+	var CLOSED:Int = 3;
+	var CLOSING:Int = 2;
+	var CONNECTING:Int = 0;
+	var OPEN:Int = 1;
 }
 
 class WebSocket {
@@ -118,10 +124,3 @@ class WebSocket {
 	}
 }
 #end
-
-enum abstract State(Int) from Int to Int {
-	var CLOSED:Int = 3;
-	var CLOSING:Int = 2;
-	var CONNECTING:Int = 0;
-	var OPEN:Int = 1;
-}
