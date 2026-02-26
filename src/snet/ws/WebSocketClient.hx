@@ -108,7 +108,7 @@ class WebSocketClient extends Client {
 #elseif js
 import js.html.WebSocket as Socket;
 import slog.Log;
-import sasync.Lazy;
+import snet.Net;
 
 #if !macro
 @:build(ssignals.Signals.build())
@@ -146,39 +146,33 @@ class WebSocketClient {
 	}
 
 	public function connect() {
-		return new Lazy((resolve, reject) -> {
-			if (!isClosed)
-				throw new NetError("Already connected");
-			socket = new Socket('ws://$remote');
-			socket.onerror = e -> {
-				logger.error(haxe.Json.stringify(e));
-				js.Browser.console.error(e);
-				reject(e);
-			}
-			socket.onopen = () -> {
-				isClosed = false;
-				socket.onmessage = m -> text(m.data);
-				socket.onclose = () -> {
-					isClosed = true;
-					closed();
-				}
-				logger.name = 'CLIENT $remote';
-				logger.debug("Connected");
-				opened();
-				resolve();
-			}
-		}, false);
-	}
-
-	public function close() {
-		return new Lazy((resolve, reject) -> {
-			socket.close();
+		if (!isClosed)
+			throw new NetError("Already connected");
+		socket = new Socket('ws://$remote');
+		socket.onerror = e -> {
+			logger.error(haxe.Json.stringify(e));
+			js.Browser.console.error(e);
+			throw e;
+		}
+		socket.onopen = () -> {
+			isClosed = false;
+			socket.onmessage = m -> text(m.data);
 			socket.onclose = () -> {
 				isClosed = true;
 				closed();
-				resolve();
 			}
-		}, false);
+			logger.name = 'CLIENT $remote';
+			logger.debug("Connected");
+			opened();
+		}
+	}
+
+	public function close() {
+		socket.close();
+		socket.onclose = () -> {
+			isClosed = true;
+			closed();
+		}
 	}
 
 	overload extern public inline function send(text:String) {

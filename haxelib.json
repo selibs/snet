@@ -22,7 +22,6 @@
     "releasenote": "Remove async",
     "dependencies": {
         "ssignals": "",
-        "sasync": "",
         "slog": ""
     }
 }
