@@ -1,10 +1,10 @@
-package snet.internal;
+package s.net.internal;
 
 #if (nodejs || sys)
 import haxe.io.Bytes;
 import slog.Log;
-import snet.Net;
-import snet.internal.Socket;
+import s.net.Net;
+import s.net.internal.Socket;
 
 #if !macro
 @:build(ssignals.Signals.build())

@@ -1,11 +1,11 @@
-package snet.ws;
+package s.net.ws;
 
 import haxe.io.Bytes;
 #if (nodejs || sys)
 import haxe.crypto.Base64;
-import snet.http.Http;
-import snet.internal.Client;
-import snet.ws.WebSocket;
+import s.net.http.Http;
+import s.net.internal.Client;
+import s.net.ws.WebSocket;
 
 using StringTools;
 
@@ -108,7 +108,7 @@ class WebSocketClient extends Client {
 #elseif js
 import js.html.WebSocket as Socket;
 import slog.Log;
-import snet.Net;
+import s.net.Net;
 
 #if !macro
 @:build(ssignals.Signals.build())
@@ -122,7 +122,7 @@ class WebSocketClient {
 	/**
 		The other side of a connected socket.
 	**/
-	public var remote(default, null):snet.Net.HostInfo;
+	public var remote(default, null):s.net.Net.HostInfo;
 
 	@:signal function bytes(bytes:Bytes);
 

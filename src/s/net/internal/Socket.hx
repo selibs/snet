@@ -1,19 +1,19 @@
-package snet.internal;
+package s.net.internal;
 
 #if (nodejs || sys)
 import sys.net.Host;
 import haxe.Exception;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
-import snet.Net;
+import s.net.Net;
 
 // imports
 typedef SecureKey = sys.ssl.Key;
 typedef SecureCertificate = sys.ssl.Certificate;
 
 typedef SysSocket = // native socket
-	// #if eval snet.internal.eval.Socket // eval
-	#if nodejs snet.internal.node.Socket // nodejs
+	// #if eval s.net.internal.eval.Socket // eval
+	#if nodejs s.net.internal.node.Socket // nodejs
 	#elseif php php.net.Socket // php
 	#else sys.net.Socket // other sys platforms
 	#end;

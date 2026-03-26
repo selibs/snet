@@ -1,6 +1,4 @@
-package snet;
-
-class NetError extends haxe.Exception {}
+package s;
 
 @:forward()
 abstract URI(URIData) from URIData to URIData {
@@ -13,9 +11,9 @@ abstract URI(URIData) from URIData to URIData {
 		var proto = reg.matched(1);
 		var isSecure = proto != null && (proto == "https" || proto == "wss");
 		var rawHost = reg.matched(4);
-        var host = rawHost != null ? HostInfo.fromString(rawHost) : null;
-        if (host.port == null)
-            host.port = isSecure ? 443 : 80;
+		var host = rawHost != null ? HostInfo.fromString(rawHost) : null;
+		if (host.port == null)
+			host.port = isSecure ? 443 : 80;
 
 		return {
 			proto: proto,
@@ -26,7 +24,7 @@ abstract URI(URIData) from URIData to URIData {
 			path: reg.matched(5) ?? "/",
 			query: reg.matched(6),
 			fragment: reg.matched(7)
-		};
+		}
 	}
 
 	@:to
@@ -48,39 +46,6 @@ abstract URI(URIData) from URIData to URIData {
 		str += this.query ?? "";
 		str += this.fragment ?? "";
 
-		return str;
-	}
-}
-
-@:forward()
-abstract Proxy(ProxyData) from ProxyData to ProxyData {
-	@:from
-	public static function fromString(value:String):Proxy {
-		var reg = new EReg("^(?:(?P<user>[^:@]+)(?::(?P<pass>[^@]*))?@)?([^/?#]+)$", "i");
-		if (value == null || !reg.match(value))
-			return null;
-
-		return {
-			host: reg.matched(3),
-			auth: reg.matched(1) != null ? {
-				user: reg.matched(1),
-				pass: reg.matched(2)
-			} : null
-		};
-	}
-
-	@:to
-	public function toString():String {
-		var str = "";
-
-		if (this.auth != null && this.auth.user != null) {
-			str += this.auth.user;
-			if (this.auth.pass != null)
-				str += ':${this.auth.pass}';
-			str += '@';
-		}
-
-		str += this.host;
 		return str;
 	}
 }
@@ -111,11 +76,6 @@ abstract HostInfo(HostInfoData) from HostInfoData to HostInfoData {
 	}
 }
 
-private typedef HostInfoData = {
-	host:String,
-	port:Int
-}
-
 private typedef URIData = {
 	host:HostInfo,
 	isSecure:Bool,
@@ -125,12 +85,9 @@ private typedef URIData = {
 	?path:String,
 	?query:String,
 	?fragment:String
-};
+}
 
-private typedef ProxyData = {
-	host:HostInfo,
-	?auth:{
-		user:String,
-		?pass:String
-	}
-};
+private typedef HostInfoData = {
+	host:String,
+	port:Int
+}

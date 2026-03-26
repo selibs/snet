@@ -1,4 +1,4 @@
-package snet.ws;
+package s.net.ws;
 
 #if (nodejs || sys)
 import haxe.io.Bytes;

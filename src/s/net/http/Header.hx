@@ -1,4 +1,4 @@
-package snet.http;
+package s.net.http;
 
 enum abstract Header(String) from String to String {
 	// General headers

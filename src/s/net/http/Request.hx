@@ -1,9 +1,9 @@
-package snet.http;
+package s.net.http;
 
 import haxe.io.Bytes;
 
 using StringTools;
-using snet.http.Request.MapExt;
+using s.net.http.Request.MapExt;
 
 class MapExt {
 	public static function isEmpty<L, R>(x:Map<L, R>)

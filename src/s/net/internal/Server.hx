@@ -1,12 +1,12 @@
-package snet.internal;
+package s.net.internal;
 
 #if (nodejs || sys)
 import haxe.Exception;
 import haxe.Constraints;
 import haxe.io.Bytes;
-import snet.Net;
-import snet.internal.Socket;
-import snet.internal.Client;
+import s.net.Net;
+import s.net.internal.Socket;
+import s.net.internal.Client;
 
 private typedef ClientConstructor = (uri:URI, ?connect:Bool, ?certificate:Certificate) -> Void;
 

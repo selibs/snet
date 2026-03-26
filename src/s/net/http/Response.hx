@@ -1,4 +1,4 @@
-package snet.http;
+package s.net.http;
 
 import haxe.io.Bytes;
 

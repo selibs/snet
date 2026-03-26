@@ -1,4 +1,4 @@
-package snet.internal.eval;
+package s.net.internal.eval;
 
 #if (eval && sys)
 import sys.net.Host;
@@ -14,8 +14,8 @@ import eval.luv.Result;
 import eval.luv.Buffer;
 import eval.luv.SockAddr;
 
-@:allow(snet.internal.eval.Socket)
-@:access(snet.internal.eval.Socket)
+@:allow(s.net.internal.eval.Socket)
+@:access(s.net.internal.eval.Socket)
 private class SocketInput extends haxe.io.Input {
 	var lock:Lock = new Lock();
 	var socket:Socket;
@@ -96,8 +96,8 @@ private class SocketInput extends haxe.io.Input {
 	}
 }
 
-@:allow(snet.internal.eval.Socket)
-@:access(snet.internal.eval.Socket)
+@:allow(s.net.internal.eval.Socket)
+@:access(s.net.internal.eval.Socket)
 private class SocketOutput extends haxe.io.Output {
 	var socket:Socket;
 	var buffers:Array<Buffer> = [];

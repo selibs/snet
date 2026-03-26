@@ -1,14 +1,14 @@
-package snet.ws;
+package s.net.ws;
 
 #if (nodejs || sys)
-import snet.Net;
-import snet.http.Http;
-import snet.ws.WebSocket;
-import snet.internal.Server;
+import s.net.Net;
+import s.net.http.Http;
+import s.net.ws.WebSocket;
+import s.net.internal.Server;
 
 using StringTools;
 
-@:access(snet.ws.WebSocketClient)
+@:access(s.net.ws.WebSocketClient)
 class WebSocketServer extends Server<WebSocketClient> {
 	overload extern public inline function send(text:String):Void {
 		broadcast(text);

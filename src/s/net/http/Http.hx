@@ -1,17 +1,17 @@
-package snet.http;
+package s.net.http;
 
-import snet.Net;
+import s.net.Net;
 #if (nodejs || sys)
-import snet.internal.Socket;
+import s.net.internal.Socket;
 #end
 
 using StringTools;
 
 class HttpError extends haxe.Exception {}
-typedef HttpStatus = snet.http.Status;
+typedef HttpStatus = s.net.http.Status;
 typedef HttpMethod = haxe.http.HttpMethod;
-typedef HttpRequest = snet.http.Request;
-typedef HttpResponse = snet.http.Response;
+typedef HttpRequest = s.net.http.Request;
+typedef HttpResponse = s.net.http.Response;
 
 class Http {
 	#if (nodejs || sys)

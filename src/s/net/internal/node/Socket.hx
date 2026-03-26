@@ -1,4 +1,4 @@
-package snet.internal.node;
+package s.net.internal.node;
 
 #if node
 import sys.net.Host;

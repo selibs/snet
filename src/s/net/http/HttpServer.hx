@@ -1,13 +1,13 @@
-package snet.http;
+package s.net.http;
 
 #if (nodejs || sys)
 import sys.io.File;
 import sys.FileSystem;
 import haxe.io.Path;
 import haxe.io.Bytes;
-import snet.Net;
-import snet.internal.Socket;
-import snet.internal.Client;
+import s.net.Net;
+import s.net.internal.Socket;
+import s.net.internal.Client;
 
 using StringTools;
 
@@ -17,7 +17,7 @@ typedef ServerConfig = {
 	statics:Array<String>
 }
 
-abstract class HttpServer extends snet.internal.Server<Client> {
+abstract class HttpServer extends s.net.internal.Server<Client> {
 	public var config:ServerConfig;
 
 	public function new(uri:URI, limit:Int = 10, open:Bool = true, ?cert:Certificate, ?config:ServerConfig) {
