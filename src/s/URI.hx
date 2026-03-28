@@ -22,7 +22,7 @@ abstract URI(URIData) from URIData to URIData {
 		return switch value {
 			case "http", "ws": 80;
 			case "https", "wss": 443;
-			case _: null;
+			case _: Std.int(Math.NaN);
 		}
 
 	static function isValidScheme(value:String):Bool
@@ -91,7 +91,7 @@ abstract URI(URIData) from URIData to URIData {
 
 		var isSecure = proto == "https" || proto == "wss";
 		var defaultPort = defaultPortForScheme(proto);
-		if (host != null && host.host != "" && host.port == null && defaultPort != null)
+		if (host != null && host.host != "" && Math.isNaN(host.port) && Math.isNaN(defaultPort))
 			host = new HostInfo(host.host, defaultPort, false);
 
 		return new URI(proto, isSecure, hasAuthority, host, user, pass, path, query, fragment);
@@ -235,10 +235,10 @@ abstract HostInfo(HostInfoData) from HostInfoData to HostInfoData {
 			return null;
 
 		if (value == "")
-			return new HostInfo("", null);
+			return new HostInfo("", Std.int(Math.NaN));
 
 		var host = value;
-		var port:Int = null;
+		var port:Int = Std.int(Math.NaN);
 		var explicitPort = false;
 
 		if (value.startsWith("[")) {
@@ -280,7 +280,7 @@ abstract HostInfo(HostInfoData) from HostInfoData to HostInfoData {
 	@:to
 	public inline function toString():String {
 		var str = this.host;
-		if (this.port != null && this.explicitPort != false)
+		if (!Math.isNaN(this.port) && this.explicitPort != false)
 			str += ':${this.port}';
 		return str;
 	}
