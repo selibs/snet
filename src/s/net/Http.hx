@@ -1,6 +1,5 @@
-package s.net.http;
+package s.net;
 
-import s.net.Net;
 #if (nodejs || sys)
 import s.net.internal.Socket;
 #end
@@ -44,19 +43,17 @@ class Http {
 		http.onStatus = s -> resp.status = s;
 		http.onError = e -> {
 			resp.error = e;
-			resolve(resp);
 		};
 		http.onBytes = b -> {
 			resp.data = b.toString();
 			resp.headers = http.responseHeaders;
-			resolve(resp);
 		};
 		http.onData = d -> {
 			resp.data = d;
 			resp.headers = http.responseHeaders;
-			resolve(resp);
 		};
 		http.request(req.data != null || req.method == Post);
+		return resp;
 		#end
 	}
 	#if (nodejs || sys)
