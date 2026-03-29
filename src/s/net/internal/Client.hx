@@ -11,7 +11,7 @@ import s.net.internal.Socket;
 #end
 class Client {
 	var socket:Socket;
-	var logger:Logger = new Logger("CLIENT");
+	var logger:Log.Logger = new Log.Logger("CLIENT");
 
 	public var isClosed(default, null):Bool = true;
 	public var isSecure(default, null):Bool;

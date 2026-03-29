@@ -115,7 +115,7 @@ import s.net.Net;
 #end
 class WebSocketClient {
 	var socket:Socket;
-	var logger:Logger = new Logger("CLIENT");
+	var logger:Log.Logger = new Log.Logger("CLIENT");
 
 	public var isClosed(default, null):Bool = true;
 
