@@ -107,8 +107,7 @@ class WebSocketClient extends Client {
 }
 #elseif js
 import js.html.WebSocket as Socket;
-import slog.Log;
-import s.net.Net;
+import s.URI;
 
 #if !macro
 @:build(ssignals.Signals.build())
@@ -122,7 +121,7 @@ class WebSocketClient {
 	/**
 		The other side of a connected socket.
 	**/
-	public var remote(default, null):s.net.Net.HostInfo;
+	public var remote(default, null):HostInfo;
 
 	@:signal function bytes(bytes:Bytes);
 
