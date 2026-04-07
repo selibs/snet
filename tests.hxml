@@ -1,6 +1,6 @@
 -D log
 -L slog
--L ssignals
+-L sshortcut
 -L snet
 -cp tests
 -cp src

@@ -6,10 +6,7 @@ import slog.Log;
 import s.net.Net;
 import s.net.internal.Socket;
 
-#if !macro
-@:build(ssignals.Signals.build())
-#end
-class Client {
+class Client implements s.shortcut.Shortcut {
 	var socket:Socket;
 	var logger:Log.Logger = new Log.Logger("CLIENT");
 

@@ -10,11 +10,8 @@ import s.net.internal.Client;
 
 private typedef ClientConstructor = (uri:URI, ?connect:Bool, ?certificate:Certificate) -> Void;
 
-#if !macro
-@:build(ssignals.Signals.build())
-#end
 @:generic
-class Server<T:Constructible<ClientConstructor> & Client> extends Client {
+class Server<T:Constructible<ClientConstructor> & Client> extends Client implements s.shortcut.Shortcut {
 	public var limit(default, null):Int;
 	public var clients(default, null):Array<T> = [];
 

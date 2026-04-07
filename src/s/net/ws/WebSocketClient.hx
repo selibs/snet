@@ -9,10 +9,7 @@ import s.net.ws.WebSocket;
 
 using StringTools;
 
-#if !macro
-@:build(ssignals.Signals.build())
-#end
-class WebSocketClient extends Client {
+class WebSocketClient extends Client implements s.shortcut.Shortcut {
 	var isHandler:Bool = false;
 
 	@:signal function bytes(bytes:Bytes);
@@ -109,10 +106,7 @@ class WebSocketClient extends Client {
 import js.html.WebSocket as Socket;
 import s.URI;
 
-#if !macro
-@:build(ssignals.Signals.build())
-#end
-class WebSocketClient {
+class WebSocketClient implements s.shortcut.Shortcut {
 	var socket:Socket;
 	var logger:Log.Logger = new Log.Logger("CLIENT");
 
