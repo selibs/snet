@@ -19,34 +19,36 @@ typedef ServerConfig = {
 abstract class HttpServer extends s.net.internal.Server<Client> {
 	public var config:ServerConfig;
 
-	public function new(uri:URI, limit:Int = 10, open:Bool = true, ?cert:Certificate, ?config:ServerConfig) {
-		super(uri, limit, open, cert);
+	public function new(uri:URI, limit:Int = 10, open:Bool = true, name:String = "SERVER", ?cert:Certificate, ?config:ServerConfig) {
+		super(uri, limit, open, name, cert);
 		this.config = config;
+	}
 
-		onClientOpened(client -> {
-			var callback = (data:Bytes) -> {
-				try {
-					var req:Request = data;
-					var resp = processRawRequest(req);
-					logger.log('<- ${req.method} ${req.path}');
-					var msg = '   -> ${resp.status} ${resp.statusText}';
-					if ((resp.status : Int) < 200)
-						logger.info(msg);
-					else if ((resp.status : Int) < 300)
-						logger.debug(msg);
-					else if ((resp.status : Int) < 400)
-						logger.warning(msg);
-					else if ((resp.status : Int) < 400)
-						logger.error(msg);
-					else
-						logger.fatal(msg);
-					client.send(resp);
-				} catch (e)
-					logger.error(e.message);
-			};
-			client.onData(callback);
-			client.onClosed(() -> client.offData(callback));
-		});
+	override function handleClientOpened(client:Client) {
+		var callback = (data:Bytes) -> {
+			try {
+				var req:Request = data;
+				var resp = processRawRequest(req);
+				logger.log('<- ${req.method} ${req.path}');
+				var msg = '   -> ${resp.status} ${resp.statusText}';
+				if ((resp.status : Int) < 200)
+					logger.info(msg);
+				else if ((resp.status : Int) < 300)
+					logger.debug(msg);
+				else if ((resp.status : Int) < 400)
+					logger.warning(msg);
+				else if ((resp.status : Int) < 400)
+					logger.error(msg);
+				else
+					logger.fatal(msg);
+				client.send(resp);
+			} catch (e)
+				logger.error(e.message);
+		};
+		client.onData(callback);
+		client.onClosed(() -> client.offData(callback));
+		
+		super.handleClientOpened(client);
 	}
 
 	abstract function processRequest(req:Request):Response;

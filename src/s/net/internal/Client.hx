@@ -10,7 +10,7 @@ import s.URI.HostInfo;
 
 class Client implements s.shortcut.Shortcut {
 	var socket:Socket;
-	var logger:Log.Logger = new Log.Logger("CLIENT");
+	final logger:Log.Logger;
 
 	public final secure:Bool;
 	public final certificate:Certificate;
@@ -38,7 +38,7 @@ class Client implements s.shortcut.Shortcut {
 
 	@:signal function data(data:Bytes);
 
-	public function new(uri:URI, connect:Bool = true, ?certificate:Certificate):Void {
+	public function new(uri:URI, name:String = "CLIENT", connect:Bool = true, ?certificate:Certificate):Void {
 		if (uri == null)
 			throw new NetError("Invalid URI");
 
@@ -47,6 +47,7 @@ class Client implements s.shortcut.Shortcut {
 
 		remote = uri.host;
 		secure = uri.secure;
+		logger = new Log.Logger(name ?? remote.toString());
 
 		if (connect)
 			this.connect();
@@ -55,12 +56,10 @@ class Client implements s.shortcut.Shortcut {
 	public function connect() {
 		try {
 			if (running)
-				throw "Already connected";
-
+				throw new NetError("Already connected");
 			socket = new Socket();
 			socket.connect(remote);
 			running = true;
-			// socket.setBlocking(false);
 			local = socket.host.info;
 			handleOpened();
 			opened();
@@ -75,7 +74,7 @@ class Client implements s.shortcut.Shortcut {
 	public function close()
 		try {
 			if (!running)
-				throw "Not connected";
+				throw new NetError("Not connected");
 			running = false;
 			socket.close();
 		} catch (e)
@@ -84,15 +83,13 @@ class Client implements s.shortcut.Shortcut {
 	public function send(data:Bytes)
 		try {
 			if (!running)
-				throw "Not connected";
+				throw new NetError("Not connected");
 			socket.send(data);
 		} catch (e)
 			logger.error("Failed to send data: " + e);
 
-	function handleOpened() {
-		logger.name = 'CLIENT $local - $remote';
+	function handleOpened()
 		logger.debug("Connected");
-	}
 
 	function handleClosed()
 		logger.debug("Closed");

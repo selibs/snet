@@ -1,7 +1,6 @@
 package s.net.internal.node;
 
 #if nodejs
-import sys.net.Host;
 import haxe.io.Bytes;
 import js.node.Net;
 import js.node.Buffer;
@@ -28,7 +27,7 @@ class Socket {
 	var newConnections:Array<Socket> = [];
 	var socket(default, null):NodeSocket;
 	var server:Server;
-	var boundHost:Host;
+	var boundHost:String;
 	var boundPort:Int;
 
 	public var input(default, null):SocketInput;
@@ -38,6 +37,7 @@ class Socket {
 
 	function setSocket(s:NodeSocket) {
 		socket = s;
+		socket.on("error", error -> trace('Node socket error: ${Std.string(error)}'));
 		input = new SocketInput(this);
 		output = new SocketOutput(this);
 	}
@@ -59,37 +59,40 @@ class Socket {
 	public function listen(connections:Int):Void {
 		if (server == null)
 			throw "You must bind the Socket to an address";
-		server.listen({host: boundHost.host, port: boundPort, backlog: connections});
+		server.listen({host: boundHost, port: boundPort, backlog: connections});
 	}
 
-	public function bind(host:Host, port:Int):Void {
+	public function bind(host:String, port:Int):Void {
 		this.boundHost = host;
 		this.boundPort = port;
-		if (server == null)
+		if (server == null) {
 			server = Net.createServer(socket -> acceptConnection(socket));
+			server.on("error", error -> trace('Node server error: ${Std.string(error)}'));
+		}
 	}
 
-	public function connect(host:Host, port:Int):Void {
+	public function connect(host:String, port:Int):Void {
 		boundHost = host;
 		boundPort = port;
 		if (socket == null) {
 			socket = new NodeSocket();
+			socket.on("error", error -> trace('Node client socket error: ${Std.string(error)}'));
 			input = new SocketInput(this);
 			output = new SocketOutput(this);
 		}
-		socket.connect(port, host.host);
+		socket.connect(port, host);
 	}
 
-	public function host():{host:Host, port:Int} {
+	public function host():{host:String, port:Int} {
 		if (socket != null && socket.localAddress != null)
-			return {host: new Host(socket.localAddress), port: socket.localPort};
+			return {host: socket.localAddress, port: socket.localPort};
 		return {host: boundHost, port: boundPort};
 	}
 
-	public function peer():{host:Host, port:Int} {
+	public function peer():{host:String, port:Int} {
 		if (socket == null || socket.remoteAddress == null)
-			return {host: new Host("0.0.0.0"), port: 0};
-		return {host: new Host(socket.remoteAddress), port: socket.remotePort};
+			return {host: "0.0.0.0", port: 0};
+		return {host: socket.remoteAddress, port: socket.remotePort};
 	}
 
 	public function setBlocking(blocking:Bool) {}

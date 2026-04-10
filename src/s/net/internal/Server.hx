@@ -4,27 +4,27 @@ package s.net.internal;
 import haxe.Exception;
 import haxe.Constraints;
 import haxe.io.Bytes;
+import s.URI;
 import s.net.internal.Socket;
 import s.net.internal.Client;
 
-private typedef ClientConstructor = (uri:URI, ?connect:Bool, ?certificate:Certificate) -> Void;
+private typedef ClientConstructor = (uri:URI, name:String, ?connect:Bool, ?certificate:Certificate) -> Void;
 
 @:generic
 class Server<T:Constructible<ClientConstructor> & Client> extends Client implements s.shortcut.Shortcut {
 	final handlers:Array<T> = [];
 
-	public var limit(default, null):Int;
 	public var clients(get, never):Array<T>;
 
 	@:signal function clientOpened(client:T):Void;
 
 	@:signal function clientClosed(client:T):Void;
 
-	public function new(port:Int, limit:Int = 10, open:Bool = true, ?cert:Certificate) {
-		super('localhost:$port', false, cert);
+	public function new(port:Int, name:String = "SERVER", open:Bool = true, ?cert:Certificate) {
+		super(new URI(null, false, true, new HostInfo("localhost", port)), name, false, cert);
+
 		local = remote;
 		remote = null;
-		this.limit = limit;
 
 		if (open)
 			this.open();
@@ -32,17 +32,22 @@ class Server<T:Constructible<ClientConstructor> & Client> extends Client impleme
 
 	override inline function connect() {}
 
-	public function open() {
-		socket = new Socket();
+	public function open(limit:Int = 10) {
 		try {
+			if (running)
+				throw "Already opened";
+
+			socket = new Socket();
 			socket.bind(local);
 			socket.listen(limit);
 			running = true;
+			handleOpened();
 			opened();
 			process();
 		} catch (e) {
+			if (running)
+				close();
 			logger.error("Failed to open: " + e);
-			socket.close();
 		}
 	}
 
@@ -60,10 +65,8 @@ class Server<T:Constructible<ClientConstructor> & Client> extends Client impleme
 		} catch (e)
 			logger.error("Failed to broadcast data: " + e);
 
-	override function handleOpened() {
-		logger.name = 'SERVER $local';
+	override function handleOpened()
 		logger.debug("Opened");
-	}
 
 	override function handleClosed()
 		for (client in handlers.iterator())
@@ -73,7 +76,7 @@ class Server<T:Constructible<ClientConstructor> & Client> extends Client impleme
 		try {
 			var connection = socket.accept();
 			if (connection != null) {
-				var client = new T(connection.peer.info.toString(), false, certificate);
+				var client = new T(connection.peer.info.toString(), "HANDLER", false, certificate);
 				client.socket = connection;
 				client.running = true;
 				client.local = connection.host.info;

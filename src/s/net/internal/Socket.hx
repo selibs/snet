@@ -1,15 +1,17 @@
 package s.net.internal;
 
 #if (nodejs || sys)
-import sys.net.Host;
 import haxe.Exception;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
 import s.URI.HostInfo;
+#if !nodejs
+import sys.net.Host;
+#end
 
-// imports
 typedef SecureKey = sys.ssl.Key;
 typedef SecureCertificate = sys.ssl.Certificate;
+typedef SocketHost = #if nodejs String #else sys.net.Host #end;
 
 typedef SysSocket = // native socket
 	// #if eval s.net.internal.eval.Socket // eval
@@ -89,7 +91,11 @@ private abstract ASocket<T:SysSocket>(T) from T to T {
 		Bind the socket to the given host/port so it can afterwards listen for connections there.
 	**/
 	overload extern public inline function bind(host:String, port:Int)
+		#if nodejs
+		(this : SysSocket).bind(host, port);
+		#else
 		(this : SysSocket).bind(new Host(host), port);
+		#end
 
 	/**
 		Connect to the given server host/port. Throw an exception in case we couldn't successfully connect.
@@ -101,7 +107,11 @@ private abstract ASocket<T:SysSocket>(T) from T to T {
 		Connect to the given server host/port. Throw an exception in case we couldn't successfully connect.
 	**/
 	overload extern public inline function connect(host:String, port:Int)
+		#if nodejs
+		(this : SysSocket).connect(host, port);
+		#else
 		(this : SysSocket).connect(new Host(host), port);
+		#end
 
 	public function send(data:Bytes, ?timeout:Float)
 		if (Socket.select([], [this], [], timeout).write.length > 0) {
@@ -145,10 +155,10 @@ private abstract ASocket<T:SysSocket>(T) from T to T {
 	function get_peer()
 		return getConnectionInfo((this : SysSocket).peer());
 
-	function getConnectionInfo(info:{host:Host, port:Int})
+	function getConnectionInfo(info:{host:SocketHost, port:Int})
 		return {
-			ip: info.host.ip,
-			info: new HostInfo(info.host.toString(), info.port)
+			ip: #if nodejs 0 #else info.host.ip #end,
+			info: new HostInfo(#if nodejs info.host #else info.host.toString() #end, info.port)
 		}
 }
 #end

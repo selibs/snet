@@ -28,14 +28,13 @@ class WebSocketClient extends Client implements s.shortcut.Shortcut {
 	function sendFrame(data:Bytes, opcode:OpCode)
 		super.send(WebSocket.writeFrame(data, opcode, !isHandler, true));
 
-	override function handleOpened() {
+	override function handleOpened()
 		try {
 			handshake();
 		} catch (e) {
 			logger.error('Handshake failed: $e');
 			throw e;
 		}
-	}
 
 	override function handleClosed()
 		sendFrame(Bytes.ofString("close"), Close);
@@ -67,7 +66,7 @@ class WebSocketClient extends Client implements s.shortcut.Shortcut {
 		var resp = Http.customRequest(socket, false, {
 			headers: [
 				HOST => remote,
-				USER_AGENT => "haxe",
+				USER_AGENT => "s",
 				SEC_WEBSOCKET_KEY => key,
 				SEC_WEBSOCKET_VERSION => "13",
 				UPGRADE => "websocket",
@@ -97,14 +96,14 @@ class WebSocketClient extends Client implements s.shortcut.Shortcut {
 	}
 }
 #elseif js
-import js.html.WebSocket as Socket;
+import js.html.WebSocket as WS;
 import s.URI;
 
 class WebSocketClient implements s.shortcut.Shortcut {
-	var ws:Socket;
-	var logger:Log.Logger = new Log.Logger("CLIENT");
+	var ws:WS;
+	final logger:Log.Logger;
 
-	public var isClosed(default, null):Bool = true;
+	public var running(default, null):Bool = false;
 
 	/**
 		The other side of a connected socket.
@@ -119,58 +118,65 @@ class WebSocketClient implements s.shortcut.Shortcut {
 
 	@:signal function closed();
 
-	public function new(uri:URI, connect:Bool = true) {
+	public function new(uri:URI, name:String = "CLIENT", connect:Bool = true) {
 		if (uri == null)
 			throw new NetError('Invalid URI');
 
-		if (!["ws", "wss"].contains(uri.proto))
-			throw new NetError('Invalid protocol: ${uri.proto}');
-
 		remote = uri.host;
+		logger = new Log.Logger(name ?? remote.toString());
 
 		if (connect)
 			this.connect();
 	}
 
 	public function connect() {
-		if (!isClosed)
-			throw new NetError("Already connected");
-		ws = new Socket('ws://$remote');
-		ws.onerror = e -> {
-			logger.error(haxe.Json.stringify(e));
-			js.Browser.console.error(e);
-			throw e;
-		}
-		ws.onopen = () -> {
-			isClosed = false;
-			ws.onmessage = m -> text(m.data);
+		try {
+			if (running)
+				throw new NetError("Already connected");
+			ws = new WS('ws://$remote');
+			ws.onopen = () -> {
+				running = true;
+				handleOpened();
+				opened();
+			}
 			ws.onclose = () -> {
-				isClosed = true;
+				running = false;
+				handleClosed();
 				closed();
 			}
-			logger.name = 'CLIENT $remote';
-			logger.debug("Connected");
-			opened();
+			ws.onmessage = m -> text(m.data);
+			ws.onerror = e -> logger.error(haxe.Json.stringify(e));
+		} catch (e) {
+			if (running)
+				close();
+			logger.error("Failed to connect: " + e);
 		}
 	}
 
-	public function close() {
+	public function close()
 		ws.close();
-		ws.onclose = () -> {
-			isClosed = true;
-			closed();
-		}
-	}
 
-	overload extern public inline function send(text:String) {
-		if (isClosed)
-			throw new NetError("Not connected");
-		ws.send(text);
-		logger.info('Sent ${Bytes.ofString(text).length} bytes of data');
-	}
+	overload extern public inline function send(text:String)
+		try {
+			if (!running)
+				throw new NetError("Not connected");
+			ws.send(text);
+		} catch (e)
+			logger.error("Failed to send data: " + e);
 
 	overload extern public inline function send(data:Bytes)
-		ws.send(data.getData());
+		try {
+			if (!running)
+				throw new NetError("Not connected");
+			ws.send(data.getData());
+		} catch (e)
+			logger.error("Failed to send data: " + e);
+
+	function handleOpened()
+		logger.debug("Connected");
+
+	function handleClosed()
+		logger.debug("Closed");
 
 	function toString()
 		return logger.name;
