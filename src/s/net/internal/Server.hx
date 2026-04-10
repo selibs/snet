@@ -4,7 +4,6 @@ package s.net.internal;
 import haxe.Exception;
 import haxe.Constraints;
 import haxe.io.Bytes;
-import s.net.Net;
 import s.net.internal.Socket;
 import s.net.internal.Client;
 
@@ -12,15 +11,17 @@ private typedef ClientConstructor = (uri:URI, ?connect:Bool, ?certificate:Certif
 
 @:generic
 class Server<T:Constructible<ClientConstructor> & Client> extends Client implements s.shortcut.Shortcut {
+	final handlers:Array<T> = [];
+
 	public var limit(default, null):Int;
-	public var clients(default, null):Array<T> = [];
+	public var clients(get, never):Array<T>;
 
 	@:signal function clientOpened(client:T):Void;
 
 	@:signal function clientClosed(client:T):Void;
 
-	public function new(uri:URI, limit:Int = 10, open:Bool = true, ?cert:Certificate) {
-		super(uri, false, cert);
+	public function new(port:Int, limit:Int = 10, open:Bool = true, ?cert:Certificate) {
+		super('localhost:$port', false, cert);
 		local = remote;
 		remote = null;
 		this.limit = limit;
@@ -29,79 +30,81 @@ class Server<T:Constructible<ClientConstructor> & Client> extends Client impleme
 			this.open();
 	}
 
-	function handleClient(client:T) {}
-
-	@async override function connect() {}
+	override inline function connect() {}
 
 	public function open() {
 		socket = new Socket();
 		try {
 			socket.bind(local);
 			socket.listen(limit);
-			isClosed = false;
-			logger.name = 'SERVER $local';
-			logger.debug("Opened");
+			running = true;
 			opened();
 			process();
 		} catch (e) {
-			logger.error('Failed to open: $e');
+			logger.error("Failed to open: " + e);
 			socket.close();
 		}
 	}
 
-	override function send(data:Bytes) {
+	override function send(data:Bytes)
 		broadcast(data);
-	}
 
-	public function broadcast(data:Bytes, ?exclude:Array<T>) {
-		if (!isClosed) {
+	public function broadcast(data:Bytes, ?exclude:Array<T>)
+		try {
+			if (!running)
+				throw new NetError("Server is not running");
 			exclude = exclude ?? [];
-			for (client in clients)
+			for (client in handlers)
 				if (!exclude.contains(client))
 					client.send(data);
-		} else
-			logger.error("Not open");
+		} catch (e)
+			logger.error("Failed to broadcast data: " + e);
+
+	override function handleOpened() {
+		logger.name = 'SERVER $local';
+		logger.debug("Opened");
 	}
 
-	override function closeClient() {
-		for (client in clients.iterator())
-			closeServerClient(client);
-	}
+	override function handleClosed()
+		for (client in handlers.iterator())
+			client.close();
 
 	override function tick() {
 		try {
-			var conn = socket.accept();
-			if (conn != null) {
-				var client = new T(conn.peer.info.toString(), false, certificate);
-				client.socket = conn;
-				client.local = conn.host.info;
+			var connection = socket.accept();
+			if (connection != null) {
+				var client = new T(connection.peer.info.toString(), false, certificate);
+				client.socket = connection;
+				client.running = true;
+				client.local = connection.host.info;
 				client.logger.name = 'HANDLER ${client.local} - ${client.remote}';
-				client.isClosed = false;
 				try {
-					handleClient(client);
-					client.onClosed(() -> {
-						clients.remove(client);
-						clientClosed(client);
-					});
-					clients.push(client);
-					clientOpened(client);
-					client.send(Bytes.ofString("hi"));
-					client.process();
-				} catch (e) {}
+					handleClientOpened(client);
+				} catch (e)
+					logger.error("Failed to handle client: " + e);
 			}
-		} catch (e) {
+		} catch (e)
 			if (e.message.toLowerCase().indexOf("interrupted") == -1) {
 				logger.error(e.message);
 				return false;
 			}
-		}
+
 		return true;
 	}
 
-	function closeServerClient(client:T):Void {
-		clients.remove(client);
-		clientClosed(client);
-		client.close();
+	function handleClientOpened(client:T) {
+		handlers.push(client);
+		client.onClosed(() -> handleClientClosed(client));
+		clientOpened(client);
+		client.process();
 	}
+
+	function handleClientClosed(client:T):Void {
+		handlers.remove(client);
+		clientClosed(client);
+	}
+
+	inline function get_clients()
+		return handlers.copy();
 }
 #end

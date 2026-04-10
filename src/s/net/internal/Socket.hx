@@ -5,7 +5,7 @@ import sys.net.Host;
 import haxe.Exception;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
-import s.net.Net;
+import s.URI.HostInfo;
 
 // imports
 typedef SecureKey = sys.ssl.Key;
@@ -22,15 +22,6 @@ typedef SysSecureSocket = // native secure socket
 	#elseif php php.net.SslSocket // php
 	#else sys.ssl.Socket // other sys platforms
 	#end;
-
-// types
-typedef Certificate = {
-	?host:String,
-	cert:SecureCertificate,
-	key:SecureKey,
-	verify:Bool
-}
-
 typedef ConnectionInfo = {
 	ip:Int,
 	info:HostInfo
@@ -91,37 +82,32 @@ private abstract ASocket<T:SysSocket>(T) from T to T {
 	/**
 		Bind the socket to the given host/port so it can afterwards listen for connections there.
 	**/
-	overload extern public inline function bind(host:HostInfo) {
+	overload extern public inline function bind(host:HostInfo)
 		bind(host.host, host.port);
-	}
 
 	/**
 		Bind the socket to the given host/port so it can afterwards listen for connections there.
 	**/
-	overload extern public inline function bind(host:String, port:Int) {
-		this.bind(new Host(host), port);
-	}
+	overload extern public inline function bind(host:String, port:Int)
+		(this : SysSocket).bind(new Host(host), port);
 
 	/**
 		Connect to the given server host/port. Throw an exception in case we couldn't successfully connect.
 	**/
-	overload extern public inline function connect(host:HostInfo) {
+	overload extern public inline function connect(host:HostInfo)
 		connect(host.host, host.port);
-	}
 
 	/**
 		Connect to the given server host/port. Throw an exception in case we couldn't successfully connect.
 	**/
-	overload extern public inline function connect(host:String, port:Int) {
-		this.connect(new Host(host), port);
-	}
+	overload extern public inline function connect(host:String, port:Int)
+		(this : SysSocket).connect(new Host(host), port);
 
-	public function send(data:Bytes, ?timeout:Float) {
-		if (Socket.select([], [this], [], timeout).write.length == 0)
-			return;
-		this.output.write(data);
-		this.output.flush();
-	}
+	public function send(data:Bytes, ?timeout:Float)
+		if (Socket.select([], [this], [], timeout).write.length > 0) {
+			this.output.write(data);
+			this.output.flush();
+		}
 
 	/**
 		Read the whole data available on the socket.
@@ -153,22 +139,16 @@ private abstract ASocket<T:SysSocket>(T) from T to T {
 		return data.getBytes();
 	}
 
-	function get_host() {
-		return getConnectionInfo(this.host());
-	}
+	function get_host()
+		return getConnectionInfo((this : SysSocket).host());
 
-	function get_peer() {
-		return getConnectionInfo(this.peer());
-	}
+	function get_peer()
+		return getConnectionInfo((this : SysSocket).peer());
 
-	function getConnectionInfo(info:{host:Host, port:Int}) {
+	function getConnectionInfo(info:{host:Host, port:Int})
 		return {
 			ip: info.host.ip,
-			info: {
-				host: info.host.toString(),
-				port: info.port
-			}
+			info: new HostInfo(info.host.toString(), info.port)
 		}
-	}
 }
 #end

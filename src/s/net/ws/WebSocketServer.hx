@@ -1,40 +1,37 @@
 package s.net.ws;
 
 #if (nodejs || sys)
-import s.net.Net;
-import s.net.http.Http;
-import s.net.ws.WebSocket;
+import s.net.Http;
 import s.net.internal.Server;
 
 using StringTools;
 
 @:access(s.net.ws.WebSocketClient)
 class WebSocketServer extends Server<WebSocketClient> {
-	overload extern public inline function send(text:String):Void {
+	overload extern public inline function send(text:String):Void
 		broadcast(text);
-	}
 
-	overload extern public inline function broadcast(text:String, ?exclude:Array<WebSocketClient>):Void {
-		if (isClosed)
-			throw new NetError("Not open");
-		exclude = exclude ?? [];
-		for (client in clients)
-			if (!exclude.contains(client))
-				client.send(text);
-	}
+	overload extern public inline function broadcast(text:String, ?exclude:Array<WebSocketClient>):Void
+		if (running) {
+			exclude = exclude ?? [];
+			for (client in clients)
+				if (!exclude.contains(client))
+					client.send(text);
+		} else
+			logger.error("Failed to broadcast data: server is not open");
 
-	override function handleClient(client:WebSocketClient) {
+	override function handleClientOpened(client:WebSocketClient) {
 		var data = client.socket.read(1.0);
 
 		if (data.length == 0) {
-			logger.error('No handshake data received from ${client.remote}');
+			logger.error("Failed to handle client: No handshake data received from " + client.remote);
 			return;
 		}
 
-		var req:HttpRequest = data;
 		var resp:HttpResponse = {};
 
 		if (data != null) {
+			var req:HttpRequest = data;
 			resp.headers.set(SEC_WEBSOCKET_VERSION, "13");
 			if (req.method != "GET" || req.version != "HTTP/1.1") {
 				resp.status = 400;
@@ -63,16 +60,15 @@ class WebSocketServer extends Server<WebSocketClient> {
 				resp.statusText = "Switching Protocols";
 				resp.headers.set(UPGRADE, "websocket");
 				resp.headers.set(CONNECTION, "Upgrade");
-				resp.headers.set(SEC_WEBSOCKET_ACCEPT, WebSocket.computeAcceptKey(key));
+				resp.headers.set(SEC_WEBSOCKET_ACCEPT, WebSocket.computeKey(key));
 			}
 		} else
-			resp = {
-				status: BadRequest,
-				statusText: "Bad Request"
-			}
+			resp = {status: BadRequest, statusText: "Bad Request"}
 
 		client.socket.send(resp);
 		client.isHandler = true;
+
+		super.handleClientOpened(client);
 	}
 }
 #end

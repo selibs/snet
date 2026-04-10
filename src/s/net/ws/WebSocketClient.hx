@@ -3,9 +3,9 @@ package s.net.ws;
 import haxe.io.Bytes;
 #if (nodejs || sys)
 import haxe.crypto.Base64;
-import s.net.http.Http;
+import s.net.Http;
 import s.net.internal.Client;
-import s.net.ws.WebSocket;
+import s.net.ws.WebSocket.OpCode;
 
 using StringTools;
 
@@ -16,19 +16,19 @@ class WebSocketClient extends Client implements s.shortcut.Shortcut {
 
 	@:signal function text(text:String);
 
-	overload extern public inline function send(text:String) {
-		_send(Bytes.ofString(text), Text);
-	}
+	overload extern public inline function send(text:String)
+		sendFrame(Bytes.ofString(text), Text);
 
-	overload extern public override inline function send(data:Bytes) {
-		_send(data, Binary);
-	}
+	overload extern public override inline function send(data:Bytes)
+		sendFrame(data, Binary);
 
-	function ping() {
-		_send(Bytes.ofString('ping-${Math.random()}'), Ping);
-	}
+	function ping()
+		sendFrame(Bytes.ofString('ping-${Math.random()}'), Ping);
 
-	override function connectClient() {
+	function sendFrame(data:Bytes, opcode:OpCode)
+		super.send(WebSocket.writeFrame(data, opcode, !isHandler, true));
+
+	override function handleOpened() {
 		try {
 			handshake();
 		} catch (e) {
@@ -37,9 +37,8 @@ class WebSocketClient extends Client implements s.shortcut.Shortcut {
 		}
 	}
 
-	override function closeClient() {
-		_send(Bytes.ofString("close"), Close);
-	}
+	override function handleClosed()
+		sendFrame(Bytes.ofString("close"), Close);
 
 	override function receive(data:Bytes) {
 		var frame = WebSocket.readFrame(data);
@@ -51,7 +50,7 @@ class WebSocketClient extends Client implements s.shortcut.Shortcut {
 			case Close:
 				close();
 			case Ping:
-				_send(frame.data, Pong);
+				sendFrame(frame.data, Pong);
 			case Pong:
 				null;
 			case Continuation:
@@ -60,7 +59,6 @@ class WebSocketClient extends Client implements s.shortcut.Shortcut {
 	}
 
 	function handshake() {
-		// ws key
 		var b = Bytes.alloc(16);
 		for (i in 0...16)
 			b.set(i, Std.random(255));
@@ -97,17 +95,13 @@ class WebSocketClient extends Client implements s.shortcut.Shortcut {
 				throw "Incorrect 'Sec-WebSocket-Accept' header value";
 		}
 	}
-
-	function _send(data:Bytes, opcode:OpCode) {
-		super.send(WebSocket.writeFrame(data, opcode, !isHandler, true));
-	}
 }
 #elseif js
 import js.html.WebSocket as Socket;
 import s.URI;
 
 class WebSocketClient implements s.shortcut.Shortcut {
-	var socket:Socket;
+	var ws:Socket;
 	var logger:Log.Logger = new Log.Logger("CLIENT");
 
 	public var isClosed(default, null):Bool = true;
@@ -141,16 +135,16 @@ class WebSocketClient implements s.shortcut.Shortcut {
 	public function connect() {
 		if (!isClosed)
 			throw new NetError("Already connected");
-		socket = new Socket('ws://$remote');
-		socket.onerror = e -> {
+		ws = new Socket('ws://$remote');
+		ws.onerror = e -> {
 			logger.error(haxe.Json.stringify(e));
 			js.Browser.console.error(e);
 			throw e;
 		}
-		socket.onopen = () -> {
+		ws.onopen = () -> {
 			isClosed = false;
-			socket.onmessage = m -> text(m.data);
-			socket.onclose = () -> {
+			ws.onmessage = m -> text(m.data);
+			ws.onclose = () -> {
 				isClosed = true;
 				closed();
 			}
@@ -161,8 +155,8 @@ class WebSocketClient implements s.shortcut.Shortcut {
 	}
 
 	public function close() {
-		socket.close();
-		socket.onclose = () -> {
+		ws.close();
+		ws.onclose = () -> {
 			isClosed = true;
 			closed();
 		}
@@ -171,16 +165,14 @@ class WebSocketClient implements s.shortcut.Shortcut {
 	overload extern public inline function send(text:String) {
 		if (isClosed)
 			throw new NetError("Not connected");
-		socket.send(text);
+		ws.send(text);
 		logger.info('Sent ${Bytes.ofString(text).length} bytes of data');
 	}
 
-	overload extern public inline function send(data:Bytes) {
-		socket.send(data.getData());
-	}
+	overload extern public inline function send(data:Bytes)
+		ws.send(data.getData());
 
-	function toString() {
+	function toString()
 		return logger.name;
-	}
 }
 #end

@@ -3,22 +3,28 @@ package s.net.http;
 import haxe.io.Bytes;
 
 using StringTools;
-using s.net.http.Request.MapExt;
+using s.extensions.MapExt;
 
-class MapExt {
-	public static function isEmpty<L, R>(x:Map<L, R>)
-		return [for (k in x.keys()) k].length == 0;
+@:structInit
+private class RequestData {
+	public var path:String = "/";
+	public var method:haxe.http.HttpMethod = Get;
+	public var version:String = "HTTP/1.1";
+	public var headers:Map<Header, String> = [];
+	public var data:String = null;
+	public var bytes:Bytes = null;
+	public var params:Map<String, String> = [];
+	public var cookies:Map<String, String> = [];
 }
 
 @:forward()
-abstract Request(RequestData) from RequestData {
+extern abstract Request(RequestData) from RequestData {
 	@:from
-	public static function fromString(value:String):Request {
+	public static inline function fromString(value:String):Request
 		return Bytes.ofString(value);
-	}
 
 	@:from
-	public static function fromBytes(raw:Bytes):Request {
+	public static inline function fromBytes(raw:Bytes):Request {
 		var str = raw.toString();
 		var lines = str.split("\r\n");
 		if (lines.length == 1)
@@ -82,7 +88,7 @@ abstract Request(RequestData) from RequestData {
 		};
 	}
 
-	static function parseURLEncoded(body:String):Map<String, String> {
+	static inline function parseURLEncoded(body:String):Map<String, String> {
 		var map = new Map();
 		for (pair in body.split("&")) {
 			var eq = pair.indexOf("=");
@@ -93,12 +99,11 @@ abstract Request(RequestData) from RequestData {
 	}
 
 	@:to
-	public function toString():String {
+	public inline function toString():String
 		return toBytes().toString();
-	}
 
 	@:to
-	public function toBytes():Bytes {
+	public inline function toBytes():Bytes {
 		var sb = new StringBuf();
 		sb.add('${this.method} ${this.path} ${this.version}\r\n');
 
@@ -147,16 +152,4 @@ abstract Request(RequestData) from RequestData {
 		full.blit(headerBytes.length, body, 0, body.length);
 		return full;
 	}
-}
-
-@:structInit
-private class RequestData {
-	public var path:String = "/";
-	public var method:haxe.http.HttpMethod = Get;
-	public var version:String = "HTTP/1.1";
-	public var headers:Map<Header, String> = [];
-	public var data:String = null;
-	public var bytes:Bytes = null;
-	public var params:Map<String, String> = [];
-	public var cookies:Map<String, String> = [];
 }

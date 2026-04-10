@@ -4,15 +4,26 @@ import haxe.io.Bytes;
 
 using StringTools;
 
+@:structInit
+private class ResponseData {
+	public var status:Status = OK;
+	public var statusText:String = "OK";
+	public var version:String = "HTTP/1.1";
+	public var headers:Map<Header, String> = [];
+	public var data:String = null;
+	public var bytes:Bytes = null;
+	public var error:String = null;
+	public var cookies:Map<String, String> = [];
+}
+
 @:forward()
-abstract Response(ResponseData) from ResponseData {
+extern abstract Response(ResponseData) from ResponseData {
 	@:from
-	public static function fromString(value:String):Response {
+	public static inline function fromString(value:String):Response
 		return Bytes.ofString(value);
-	}
 
 	@:from
-	public static function fromBytes(raw:Bytes):Response {
+	public static inline function fromBytes(raw:Bytes):Response {
 		var str = raw.toString();
 		var headerEnd = str.indexOf("\r\n\r\n");
 
@@ -102,7 +113,7 @@ abstract Response(ResponseData) from ResponseData {
 		}
 	}
 
-	static function parseChunkedBody(lines:Array<String>):String {
+	static inline function parseChunkedBody(lines:Array<String>):String {
 		var result = new StringBuf();
 		while (lines.length > 0) {
 			var sizeLine = lines.shift();
@@ -124,12 +135,11 @@ abstract Response(ResponseData) from ResponseData {
 	}
 
 	@:to
-	public function toString():String {
+	public inline function toString():String
 		return toBytes().toString();
-	}
 
 	@:to
-	public function toBytes():Bytes {
+	public inline function toBytes():Bytes {
 		var sb = new StringBuf();
 		sb.add('${this.version} ${this.status} ${this.statusText}\r\n');
 
@@ -165,16 +175,4 @@ abstract Response(ResponseData) from ResponseData {
 
 		return full;
 	}
-}
-
-@:structInit
-private class ResponseData {
-	public var status:Status = OK;
-	public var statusText:String = "OK";
-	public var version:String = "HTTP/1.1";
-	public var headers:Map<Header, String> = [];
-	public var data:String = null;
-	public var bytes:Bytes = null;
-	public var error:String = null;
-	public var cookies:Map<String, String> = [];
 }

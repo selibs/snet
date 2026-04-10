@@ -5,7 +5,6 @@ import sys.io.File;
 import sys.FileSystem;
 import haxe.io.Path;
 import haxe.io.Bytes;
-import s.net.Net;
 import s.net.internal.Socket;
 import s.net.internal.Client;
 
@@ -68,74 +67,45 @@ abstract class HttpServer extends s.net.internal.Server<Client> {
 					return processRequest(req);
 			}
 		}
-		return {
-			status: BadRequest,
-			statusText: "Bad Request"
-		}
+		return {status: BadRequest, statusText: "Bad Request"}
 	}
 
 	function matchesStaticPath(path:String):Bool {
-		for (pattern in config.statics) {
+		for (pattern in config.statics)
 			if (pattern.endsWith("/*")) {
 				var prefix = pattern.substr(0, pattern.length - 1);
 				if (path.startsWith(prefix))
 					return true;
-			} else {
-				if (path == pattern)
-					return true;
-			}
-		}
+			} else if (path == pattern)
+				return true;
 		return false;
 	}
 
 	function loadStatic(path:String):Response {
 		path = config.location + path;
-		if (FileSystem.exists(path)) {
-			try {
-				var bytes = File.getBytes(path);
-				var ext = Path.extension(path);
-				switch ext {
-					case "js":
-						return {
-							data: bytes.toString(),
-							headers: [CONTENT_TYPE => "application/javascript; charset=utf-8"]
-						}
-					case "css":
-						return {
-							data: bytes.toString(),
-							headers: [CONTENT_TYPE => "text/css; charset=utf-8"]
-						}
-					case "html":
-						return {
-							data: bytes.toString(),
-							headers: [CONTENT_TYPE => "text/html; charset=utf-8"]
-						}
-					case "json":
-						return {
-							data: bytes.toString(),
-							headers: [CONTENT_TYPE => "application/json"]
-						}
-					case "png", "gif", "jpg", "jpeg":
-						return {
-							bytes: bytes,
-							headers: [CONTENT_TYPE => 'image/$ext']
-						}
-					default:
-						return {
-							bytes: bytes,
-							headers: [CONTENT_TYPE => "application/octet-stream"]
-						}
-				}
-			} catch (e)
-				return {
-					status: InternalServerError,
-					statusText: "Internal Server Error"
-				}
-		} else
-			return {
-				status: NotFound,
-				statusText: "Not Found"
+
+		if (!FileSystem.exists(path))
+			return {status: NotFound, statusText: "Not Found"}
+
+		try {
+			var bytes = File.getBytes(path);
+			var ext = Path.extension(path);
+			switch ext {
+				case "js":
+					return {data: bytes.toString(), headers: [CONTENT_TYPE => "application/javascript; charset=utf-8"]}
+				case "css":
+					return {data: bytes.toString(), headers: [CONTENT_TYPE => "text/css; charset=utf-8"]}
+				case "html":
+					return {data: bytes.toString(), headers: [CONTENT_TYPE => "text/html; charset=utf-8"]}
+				case "json":
+					return {data: bytes.toString(), headers: [CONTENT_TYPE => "application/json"]}
+				case "png", "gif", "jpg", "jpeg":
+					return {bytes: bytes, headers: [CONTENT_TYPE => 'image/$ext']}
+				default:
+					return {bytes: bytes, headers: [CONTENT_TYPE => "application/octet-stream"]}
 			}
+		} catch (e)
+			return {status: InternalServerError, statusText: "Internal Server Error"}
 	}
 }
 #end

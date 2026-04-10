@@ -89,19 +89,19 @@ abstract URI(URIData) from URIData to URIData {
 		} else
 			path = source;
 
-		var isSecure = proto == "https" || proto == "wss";
+		var secure = proto == "https" || proto == "wss";
 		var defaultPort = defaultPortForScheme(proto);
 		if (host != null && host.host != "" && Math.isNaN(host.port) && Math.isNaN(defaultPort))
 			host = new HostInfo(host.host, defaultPort, false);
 
-		return new URI(proto, isSecure, hasAuthority, host, user, pass, path, query, fragment);
+		return new URI(proto, secure, hasAuthority, host, user, pass, path, query, fragment);
 	}
 
-	public function new(proto:String, ?isSecure:Bool, ?hasAuthority:Bool, ?host:HostInfo, ?user:String, ?pass:String, ?path:String, ?query:URIQuery,
+	public function new(proto:String, ?secure:Bool, ?hasAuthority:Bool, ?host:HostInfo, ?user:String, ?pass:String, ?path:String, ?query:URIQuery,
 			?fragment:String) {
 		this = {
 			proto: proto,
-			isSecure: isSecure == true,
+			secure: secure == true,
 			hasAuthority: hasAuthority ?? (host != null || user != null || pass != null),
 			host: host,
 			user: user,
@@ -145,7 +145,7 @@ abstract URI(URIData) from URIData to URIData {
 @:structInit
 private class URIData {
 	public var proto:String;
-	public var isSecure:Bool = false;
+	public var secure:Bool = false;
 	public var hasAuthority:Bool = false;
 	public var host:HostInfo = null;
 	public var user:String = null;

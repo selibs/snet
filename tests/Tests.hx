@@ -4,6 +4,7 @@ import s.URI;
 
 class Tests {
 	static function main() {
+		// URI tests
 		assertUri("http://example.com", uri -> {
 			assert(uri.proto == "http", "Expected normalized http scheme");
 			assert(uri.host != null && uri.host.host == "example.com", "Expected example.com host");
@@ -12,7 +13,7 @@ class Tests {
 
 		assertUri("https://user:pass@example.com/path/to/resource?x=1#frag", uri -> {
 			assert(uri.proto == "https", "Expected https scheme");
-			assert(uri.isSecure, "Expected secure URI");
+			assert(uri.secure, "Expected secure URI");
 			assert(uri.user == "user", "Expected user info");
 			assert(uri.pass == "pass", "Expected password info");
 			assert(uri.query != null && uri.query["x"] == "1", "Expected query map with x=1");

@@ -1,52 +1,48 @@
 package s.net.internal.node;
 
-#if node
+#if nodejs
 import sys.net.Host;
 import haxe.io.Bytes;
 import js.node.Net;
 import js.node.Buffer;
 import js.node.net.Server;
-import js.node.net.Socket;
+import js.node.net.Socket as NodeSocket;
 
 class Socket {
 	static var connections:Array<Socket> = [];
 
 	public static function select(read:Array<Socket>, write:Array<Socket>, others:Array<Socket>,
 			?timeout:Float):{read:Array<Socket>, write:Array<Socket>, others:Array<Socket>} {
-		if (write?.length > 0 || others?.length > 0)
-			throw "Not implemented";
-
-		var ret = {
-			read: [],
-			write: [],
-			others: []
-		}
+		var ret = {read: [], write: [], others: []}
 		for (c in connections)
 			if (read.indexOf(c) != -1 && c.input.hasData == true)
 				ret.read.push(c);
+		if (write != null)
+			ret.write = write.copy();
+		if (others != null)
+			ret.others = others.copy();
 
 		return ret;
 	}
 
-	var socket:Socket;
+	var newConnections:Array<Socket> = [];
+	var socket(default, null):NodeSocket;
 	var server:Server;
-	var host:Host;
-	var port:Int;
+	var boundHost:Host;
+	var boundPort:Int;
 
 	public var input(default, null):SocketInput;
 	public var output(default, null):SocketOutput;
 
 	public function new() {}
 
-	function setSocket(s:Socket) {
+	function setSocket(s:NodeSocket) {
 		socket = s;
 		input = new SocketInput(this);
 		output = new SocketOutput(this);
 	}
 
-	var newConnections:Array<Socket> = [];
-
-	function acceptConnection(socket:Socket) {
+	function acceptConnection(socket:NodeSocket) {
 		socket.setTimeout(0);
 		var nodeSocket = new Socket();
 		nodeSocket.setSocket(socket);
@@ -62,19 +58,38 @@ class Socket {
 
 	public function listen(connections:Int):Void {
 		if (server == null)
-			throw "You must bind the Socket to an address!";
-		server.listen({
-			host: host.host,
-			port: port,
-			backlog: connections
-		});
+			throw "You must bind the Socket to an address";
+		server.listen({host: boundHost.host, port: boundPort, backlog: connections});
 	}
 
 	public function bind(host:Host, port:Int):Void {
-		host = host;
-		port = port;
+		this.boundHost = host;
+		this.boundPort = port;
 		if (server == null)
-			server = Net.createServer(acceptConnection);
+			server = Net.createServer(socket -> acceptConnection(socket));
+	}
+
+	public function connect(host:Host, port:Int):Void {
+		boundHost = host;
+		boundPort = port;
+		if (socket == null) {
+			socket = new NodeSocket();
+			input = new SocketInput(this);
+			output = new SocketOutput(this);
+		}
+		socket.connect(port, host.host);
+	}
+
+	public function host():{host:Host, port:Int} {
+		if (socket != null && socket.localAddress != null)
+			return {host: new Host(socket.localAddress), port: socket.localPort};
+		return {host: boundHost, port: boundPort};
+	}
+
+	public function peer():{host:Host, port:Int} {
+		if (socket == null || socket.remoteAddress == null)
+			return {host: new Host("0.0.0.0"), port: 0};
+		return {host: new Host(socket.remoteAddress), port: socket.remotePort};
 	}
 
 	public function setBlocking(blocking:Bool) {}
@@ -87,7 +102,7 @@ class Socket {
 	}
 }
 
-@:access(hx.ws.nodejs.Socket)
+@:access(s.net.internal.node.Socket)
 class SocketInput {
 	var socket:Socket;
 	var buffer:Buffer = null;
@@ -95,8 +110,8 @@ class SocketInput {
 	public var hasData = false;
 
 	public function new(socket:Socket) {
-		socket = socket;
-		socket.socket.on("data", onData);
+		this.socket = socket;
+		this.socket.socket.on("data", onData);
 	}
 
 	function onData(data:Any) {
@@ -128,7 +143,7 @@ class SocketInput {
 	}
 }
 
-@:access(hx.ws.nodejs.Socket)
+@:access(s.net.internal.node.Socket)
 class SocketOutput {
 	var socket:Socket;
 	var buffer:Buffer = null;
@@ -146,7 +161,7 @@ class SocketOutput {
 	}
 
 	public function flush() {
-		socket.socket.write(buffer);
+		this.socket.socket.write(buffer);
 		buffer = null;
 	}
 }
