@@ -110,13 +110,13 @@ class WebSocketClient implements s.shortcut.Shortcut {
 	**/
 	public var remote(default, null):HostInfo;
 
-	@:signal function bytes(bytes:Bytes);
+	@:signal public function bytes(bytes:Bytes);
 
-	@:signal function text(text:String);
+	@:signal public function text(text:String);
 
-	@:signal function opened();
+	@:signal public function opened();
 
-	@:signal function closed();
+	@:signal public function closed();
 
 	public function new(uri:URI, name:String = "CLIENT", connect:Bool = true) {
 		if (uri == null)
