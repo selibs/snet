@@ -80,6 +80,7 @@ class Server<T:Constructible<ClientConstructor> & Client> extends Client impleme
 				client.socket = connection;
 				client.running = true;
 				client.local = connection.host.info;
+				client.remote = connection.peer.info;
 				client.logger.name = 'HANDLER ${client.local} - ${client.remote}';
 				try {
 					handleClientOpened(client);

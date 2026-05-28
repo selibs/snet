@@ -6,11 +6,12 @@ using StringTools;
 using s.extensions.MapExt;
 
 @:structInit
-private class RequestData {
+private class HttpRequestData {
 	public var path:String = "/";
+	public var query:String = null;
 	public var method:haxe.http.HttpMethod = Get;
 	public var version:String = "HTTP/1.1";
-	public var headers:Map<Header, String> = [];
+	public var headers:Map<HttpHeader, String> = [];
 	public var data:String = null;
 	public var bytes:Bytes = null;
 	public var params:Map<String, String> = [];
@@ -18,13 +19,13 @@ private class RequestData {
 }
 
 @:forward()
-extern abstract Request(RequestData) from RequestData {
+extern abstract HttpRequest(HttpRequestData) from HttpRequestData {
 	@:from
-	public static inline function fromString(value:String):Request
+	public static inline function fromString(value:String):HttpRequest
 		return Bytes.ofString(value);
 
 	@:from
-	public static inline function fromBytes(raw:Bytes):Request {
+	public static inline function fromBytes(raw:Bytes):HttpRequest {
 		var str = raw.toString();
 		var lines = str.split("\r\n");
 		if (lines.length == 1)
@@ -42,7 +43,7 @@ extern abstract Request(RequestData) from RequestData {
 		var query = queryIndex >= 0 ? fullPath.substr(queryIndex + 1) : null;
 		var version = parts.length > 2 ? parts[2] : "HTTP/1.1";
 
-		var headers:Map<Header, String> = [];
+		var headers:Map<HttpHeader, String> = [];
 		var cookies:Map<String, String> = [];
 		while (lines.length > 0) {
 			var line = lines.shift();
@@ -79,6 +80,7 @@ extern abstract Request(RequestData) from RequestData {
 		return {
 			method: method,
 			path: path,
+			query: query,
 			version: version,
 			headers: headers,
 			cookies: cookies,
@@ -105,7 +107,10 @@ extern abstract Request(RequestData) from RequestData {
 	@:to
 	public inline function toBytes():Bytes {
 		var sb = new StringBuf();
-		sb.add('${this.method} ${this.path} ${this.version}\r\n');
+		var path = this.path ?? "/";
+		if (this.query != null && this.query != "" && path.indexOf("?") == -1)
+			path += "?" + this.query;
+		sb.add('${this.method} ${path} ${this.version}\r\n');
 
 		// cookies
 		if (this.cookies != null && !this.cookies.isEmpty()) {

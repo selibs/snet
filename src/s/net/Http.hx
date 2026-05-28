@@ -1,18 +1,20 @@
 package s.net;
 
 #if (nodejs || sys)
+import haxe.io.Bytes;
+import haxe.io.BytesBuffer;
 import s.net.internal.Socket;
 #elseif js
-import s.net.http.Header.*;
+import s.net.http.HttpHeader.*;
 #end
 
 using StringTools;
 
 class HttpError extends haxe.Exception {}
-typedef HttpStatus = s.net.http.Status;
+typedef HttpStatus = s.net.http.HttpStatus;
 typedef HttpMethod = haxe.http.HttpMethod;
-typedef HttpRequest = s.net.http.Request;
-typedef HttpResponse = s.net.http.Response;
+typedef HttpRequest = s.net.http.HttpRequest;
+typedef HttpResponse = s.net.http.HttpResponse;
 
 class Http {
 	#if (nodejs || sys)
@@ -36,6 +38,7 @@ class Http {
 		return customRequest(socket, true, req, timeout);
 		#elseif js
 		var url = uri.toString();
+
 		if (req.path != null && req.path != "" && req.path != "/") {
 			if (url.endsWith("/") && req.path.startsWith("/"))
 				url += req.path.substr(1);
@@ -44,23 +47,22 @@ class Http {
 			else
 				url += req.path;
 		}
-
 		var method = req.method ?? Get;
 		var query = [];
+
 		for (p in req.params.keys())
 			query.push(StringTools.urlEncode(p) + "=" + StringTools.urlEncode(req.params.get(p)));
 		if (query.length > 0 && method == Get)
 			url += (url.indexOf("?") == -1 ? "?" : "&") + query.join("&");
-
 		var hasCookies = req.cookies != null && req.cookies.keys().hasNext();
 		var body:Dynamic = null;
+
 		if (req.data != null)
 			body = req.data;
 		else if (req.bytes != null)
 			body = req.bytes.getData();
 		else if (method == Post && query.length > 0)
 			body = query.join("&");
-
 		function createRequest(useArrayBuffer:Bool) {
 			var xhr:js.html.XMLHttpRequest = js.Browser.createXMLHttpRequest();
 			xhr.open(method, url, false);
@@ -141,6 +143,7 @@ class Http {
 		};
 		var xhr = createRequest(true);
 		var sendError = send(xhr);
+
 		if (sendError != null)
 			return ({
 				status: 0,
@@ -149,12 +152,11 @@ class Http {
 				headers: [],
 				cookies: []
 			} : HttpResponse);
-
 		updateResponseMeta(xhr, resp);
-
 		var status:Int = resp.status;
 		if (200 <= status && status < 400) {
 			var response:Dynamic = xhr.response;
+
 			if (Std.isOfType(response, js.lib.ArrayBuffer))
 				resp.bytes = haxe.io.Bytes.ofData(cast response);
 			else if (Std.isOfType(response, String))
@@ -171,7 +173,6 @@ class Http {
 			}
 		} else
 			resp.error = 'Http Error #$status';
-
 		return resp;
 		#end
 	}
@@ -179,7 +180,7 @@ class Http {
 	public static function customRequest(socket:Socket, close:Bool, req:HttpRequest, timeout:Float = 1.0) {
 		socket.send(req);
 
-		var data = socket.read(timeout);
+		var data = readResponseData(socket, timeout);
 		var resp:HttpResponse = null;
 		if (data.length > 0)
 			try {
@@ -197,6 +198,62 @@ class Http {
 		if (close)
 			socket.close();
 		return resp;
+	}
+
+	static function readResponseData(socket:Socket, timeout:Float):Bytes {
+		var data = new BytesBuffer();
+		var buffer = Bytes.alloc(4096);
+		var start = Sys.time();
+		var result = Bytes.alloc(0);
+		while (true) {
+			var remaining = timeout - (Sys.time() - start);
+			if (remaining <= 0)
+				break;
+			if (Socket.select([socket], [], [], remaining).read.length == 0)
+				break;
+
+			var length = socket.input.readBytes(buffer, 0, buffer.length);
+			if (length <= 0)
+				break;
+			data.addBytes(buffer, 0, length);
+			result = data.getBytes();
+			if (isCompleteResponse(result))
+				break;
+		}
+		return result;
+	}
+
+	static function isCompleteResponse(bytes:Bytes):Bool {
+		var raw = bytes.toString();
+		var headerEnd = raw.indexOf("\r\n\r\n");
+		var separatorLength = 4;
+		if (headerEnd == -1) {
+			headerEnd = raw.indexOf("\n\n");
+			separatorLength = 2;
+		}
+		if (headerEnd == -1)
+			return false;
+
+		var contentLength:Null<Int> = null;
+		var chunked = false;
+		for (line in raw.substring(0, headerEnd).split("\n")) {
+			var sep = line.indexOf(":");
+			if (sep == -1)
+				continue;
+			var name = line.substring(0, sep).trim().toLowerCase();
+			var value = line.substr(sep + 1).trim();
+			if (name == "content-length")
+				contentLength = Std.parseInt(value) ?? 0;
+			else if (name == "transfer-encoding" && value.toLowerCase().indexOf("chunked") != -1)
+				chunked = true;
+		}
+
+		var bodyStart = headerEnd + separatorLength;
+		if (contentLength != null)
+			return bytes.length >= bodyStart + contentLength;
+		if (chunked)
+			return raw.indexOf("\r\n0\r\n", bodyStart) != -1 || raw.indexOf("\n0\n", bodyStart) != -1;
+		return true;
 	}
 	#end
 }

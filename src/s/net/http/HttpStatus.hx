@@ -3,7 +3,7 @@ package s.net.http;
 /**
  * HTTP status codes.
  */
-enum abstract Status(Int) from Int to Int {
+enum abstract HttpStatus(Int) from Int to Int {
 	// --- 1xx Informational ---
 
 	/** Request headers received, client should proceed with request body. */

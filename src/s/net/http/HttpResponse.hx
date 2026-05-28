@@ -5,11 +5,11 @@ import haxe.io.Bytes;
 using StringTools;
 
 @:structInit
-private class ResponseData {
-	public var status:Status = OK;
+private class HttpResponseData {
+	public var status:HttpStatus = OK;
 	public var statusText:String = "OK";
 	public var version:String = "HTTP/1.1";
-	public var headers:Map<Header, String> = [];
+	public var headers:Map<HttpHeader, String> = [];
 	public var data:String = null;
 	public var bytes:Bytes = null;
 	public var error:String = null;
@@ -17,13 +17,13 @@ private class ResponseData {
 }
 
 @:forward()
-extern abstract Response(ResponseData) from ResponseData {
+extern abstract HttpResponse(HttpResponseData) from HttpResponseData {
 	@:from
-	public static inline function fromString(value:String):Response
+	public static inline function fromString(value:String):HttpResponse
 		return Bytes.ofString(value);
 
 	@:from
-	public static inline function fromBytes(raw:Bytes):Response {
+	public static inline function fromBytes(raw:Bytes):HttpResponse {
 		var str = raw.toString();
 		var headerEnd = str.indexOf("\r\n\r\n");
 
@@ -50,7 +50,7 @@ extern abstract Response(ResponseData) from ResponseData {
 		var status = Std.parseInt(parts[1]);
 		var statusText = parts.slice(2).join(" ");
 
-		var headers:Map<Header, String> = [];
+		var headers:Map<HttpHeader, String> = [];
 		var cookies:Map<String, String> = [];
 
 		for (line in lines) {
@@ -87,12 +87,14 @@ extern abstract Response(ResponseData) from ResponseData {
 
 		// if Content-Length is set — we know exactly how many bytes to read
 		var contentLength = headers.exists(CONTENT_LENGTH) ? Std.parseInt(headers.get(CONTENT_LENGTH)) : bodyLength;
+		if (contentLength == null || contentLength < 0 || contentLength > bodyLength)
+			contentLength = bodyLength;
 
 		var contentBytes = raw.sub(bodyStart, contentLength);
 		var contentType = headers.get(CONTENT_TYPE);
 
 		// choose whether it's binary or text
-		if (contentType != null && contentType.startsWith("text/") || contentType.contains("json")) {
+		if (contentType != null && (contentType.startsWith("text/") || contentType.contains("json"))) {
 			return {
 				version: version,
 				status: status,

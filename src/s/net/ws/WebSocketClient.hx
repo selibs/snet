@@ -12,9 +12,9 @@ using StringTools;
 class WebSocketClient extends Client implements s.shortcut.Shortcut {
 	var isHandler:Bool = false;
 
-	@:signal function bytes(bytes:Bytes);
+	@:signal public function bytes(bytes:Bytes);
 
-	@:signal function text(text:String);
+	@:signal public function text(text:String);
 
 	overload extern public inline function send(text:String)
 		sendFrame(Bytes.ofString(text), Text);
@@ -64,6 +64,7 @@ class WebSocketClient extends Client implements s.shortcut.Shortcut {
 		var key = Base64.encode(b);
 
 		var resp = Http.customRequest(socket, false, {
+			path: uri.path == null || uri.path == "" ? "/" : uri.path + (uri.query == null ? "" : "?" + uri.query.toString()),
 			headers: [
 				HOST => remote,
 				USER_AGENT => "s",
@@ -102,6 +103,7 @@ import s.URI;
 class WebSocketClient implements s.shortcut.Shortcut {
 	var ws:WS;
 	final logger:Log.Logger;
+	final uri:URI;
 
 	public var running(default, null):Bool = false;
 
@@ -122,6 +124,7 @@ class WebSocketClient implements s.shortcut.Shortcut {
 		if (uri == null)
 			throw new NetError('Invalid URI');
 
+		this.uri = uri;
 		remote = uri.host;
 		logger = new Log.Logger(name ?? remote.toString());
 
@@ -133,7 +136,7 @@ class WebSocketClient implements s.shortcut.Shortcut {
 		try {
 			if (running)
 				throw new NetError("Already connected");
-			ws = new WS('ws://$remote');
+			ws = new WS(uri.toString());
 			ws.onopen = () -> {
 				running = true;
 				handleOpened();

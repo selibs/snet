@@ -1,6 +1,6 @@
 package s.net.http;
 
-enum abstract Header(String) from String to String {
+extern enum abstract HttpHeader(String) from String to String {
 	// General headers
 	var CACHE_CONTROL = "Cache-Control";
 	var CONNECTION = "Connection";

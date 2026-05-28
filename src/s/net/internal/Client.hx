@@ -96,13 +96,15 @@ class Client implements s.shortcut.Shortcut {
 
 	function process() {
 		#if target.threaded
-		sys.thread.Thread.create(() -> {
+		sys.thread.Thread.create(processLoop);
+		#else
+		processLoop();
 		#end
-			while (running && tick())
-				Sys.sleep(0.01);
-		#if target.threaded
-		});
-		#end
+	}
+
+	function processLoop() {
+		while (running && tick())
+			Sys.sleep(0.01);
 		handleClosed();
 		if (running)
 			close();
